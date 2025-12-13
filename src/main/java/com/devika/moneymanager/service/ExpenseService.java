@@ -4,6 +4,7 @@ import com.devika.moneymanager.dto.CategoryDTO;
 import com.devika.moneymanager.dto.ExpenseDTO;
 import com.devika.moneymanager.entity.CategoryEntity;
 import com.devika.moneymanager.entity.ExpenseEntity;
+import com.devika.moneymanager.entity.IncomeEntity;
 import com.devika.moneymanager.entity.ProfileEntity;
 import com.devika.moneymanager.repository.CategoryRepository;
 import com.devika.moneymanager.repository.ExpenseRepository;
@@ -11,10 +12,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.stream.Collectors.toList;
 
@@ -25,6 +29,8 @@ public class ExpenseService {
     private final CategoryRepository categoryRepository;
     private final ExpenseRepository expenseRepository;
     private final ProfileService profileService;
+    private final ExcelExportService excelExportService;
+    private final EmailService emailService;
 
     public ExpenseDTO addExpense(ExpenseDTO expenseDTO){
          ProfileEntity currentUser= profileService.getCurrentProfile();
@@ -84,6 +90,37 @@ public class ExpenseService {
     public List<ExpenseDTO> getExpensesForUserOnDate(Long profileId, LocalDate date){
         List<ExpenseEntity> expenseEntities=expenseRepository.findByProfileEntity_IdAndDate(profileId,date);
         return expenseEntities.stream().map(this::toDTO).toList();
+    }
+    //excel
+    public ByteArrayInputStream downloadExpenses() throws IOException {
+        String[] EXPENSE_HEADERS = {"S.NO", "Name", "Category", "Amount", "Date"};
+        List<ExpenseEntity> expenses = expenseRepository.findAll();
+        AtomicInteger counter = new AtomicInteger(1);
+        return excelExportService.export(
+                expenses,
+                "Expense Details",
+                EXPENSE_HEADERS,
+                expense -> new Object[]{
+                        counter.getAndIncrement(),
+                        expense.getName(),
+                        expense.getCategoryEntity().getName(),
+                        expense.getAmount(),
+                        expense.getDate(),
+                }
+        );
+    }
+
+    // send mail expense details excel
+    public void emailExpenseExcel() throws IOException {
+        byte[] excelBytes = downloadExpenses().readAllBytes();
+        ProfileEntity profile= profileService.getCurrentProfile();
+        emailService.sendEmailWithAttachment(
+                profile.getEmail(),
+                "Your Expense Report",
+                "Please find attached your expense details Excel report.",
+                excelBytes,
+                "expense_details.xlsx"
+        );
     }
 
     //helper methods

@@ -13,9 +13,11 @@ import sendinblue.ApiClient;
 import sendinblue.Configuration;
 import sibApi.TransactionalEmailsApi;
 import sibModel.SendSmtpEmail;
+import sibModel.SendSmtpEmailAttachment;
 import sibModel.SendSmtpEmailSender;
 import sibModel.SendSmtpEmailTo;
 
+import java.util.Base64;
 import java.util.List;
 
 @Service
@@ -77,4 +79,48 @@ public class EmailService {
             throw new RuntimeException("Unable to send email. Please try again later.");
         }
     }
+
+    public void sendEmailWithAttachment(
+            String to,
+            String subject,
+            String body,
+            byte[] fileBytes,
+            String fileName
+    ) {
+        try {
+            ApiClient defaultClient = Configuration.getDefaultApiClient();
+            defaultClient.setApiKey(apiKey);
+
+            TransactionalEmailsApi apiInstance = new TransactionalEmailsApi();
+
+            SendSmtpEmailSender sender = new SendSmtpEmailSender()
+                    .email(fromEmail)
+                    .name(fromName);
+
+            SendSmtpEmailTo receiver = new SendSmtpEmailTo().email(to);
+
+            // Convert file to Base64
+            String encodedFile = Base64.getEncoder().encodeToString(fileBytes);
+
+            SendSmtpEmailAttachment attachment = new SendSmtpEmailAttachment()
+                    .content(encodedFile.getBytes())
+                    .name(fileName);
+
+            SendSmtpEmail email = new SendSmtpEmail()
+                    .sender(sender)
+                    .to(List.of(receiver))
+                    .subject(subject)
+                    .textContent(body)
+                    .attachment(List.of(attachment));
+
+            apiInstance.sendTransacEmail(email);
+
+            logger.info("Email with attachment sent to {}", to);
+
+        } catch (Exception ex) {
+            logger.error("Email sending failed: {}", ex.getMessage());
+            throw new RuntimeException("Unable to send email with attachment.");
+        }
+    }
+
 }

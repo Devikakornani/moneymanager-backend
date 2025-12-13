@@ -13,9 +13,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +27,9 @@ public class IncomeService {
     private final IncomeRepository incomeRepository;
     private final ProfileService profileService;
     private final CategoryRepository categoryRepository;
+    private final ExcelExportService excelExportService;
+    private final EmailService emailService;
+
 
     public IncomeDTO addIncome(IncomeDTO incomeDTO){
         ProfileEntity currentUser= profileService.getCurrentProfile();
@@ -77,6 +83,38 @@ public class IncomeService {
                 startDate,endDate,keyword,sort
         );
         return incomeEntityList.stream().map(this::toDTO).toList();
+    }
+
+    //excel
+    public ByteArrayInputStream  downloadIncome() throws IOException {
+        String[] INCOME_HEADERS = {"S.NO", "Name", "Category", "Amount", "Date"};
+        List<IncomeEntity> incomes = incomeRepository.findAll();
+        AtomicInteger counter = new AtomicInteger(1);
+        return excelExportService.export(
+                incomes,
+                "Income Details",
+                INCOME_HEADERS,
+                income -> new Object[]{
+                        counter.getAndIncrement(),
+                        income.getName(),
+                        income.getCategoryEntity().getName(),
+                        income.getAmount(),
+                        income.getDate(),
+                }
+        );
+    }
+
+    // send mail income details excel
+    public void emailIncomeExcel() throws IOException {
+        byte[] excelBytes = downloadIncome().readAllBytes();
+        ProfileEntity profile= profileService.getCurrentProfile();
+        emailService.sendEmailWithAttachment(
+                profile.getEmail(),
+                "Your Income Report",
+                "Please find attached your income details Excel report.",
+                excelBytes,
+                "income_details.xlsx"
+        );
     }
 
     //helper methods

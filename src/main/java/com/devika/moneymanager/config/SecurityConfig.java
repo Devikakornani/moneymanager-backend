@@ -62,7 +62,7 @@ public class SecurityConfig {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         // allows reqs from any domain, recommended to specify fe domain(https://fe-domain.com")
         corsConfiguration.setAllowedOrigins(List.of(
-                "http://localhost:5173" //local
+                "http://localhost:5173" // local
         ));
         // these are the methods allowed from fe
         corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
