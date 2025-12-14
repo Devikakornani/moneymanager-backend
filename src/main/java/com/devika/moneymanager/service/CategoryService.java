@@ -4,6 +4,7 @@ import com.devika.moneymanager.dto.CategoryDTO;
 import com.devika.moneymanager.entity.CategoryEntity;
 import com.devika.moneymanager.entity.ProfileEntity;
 import com.devika.moneymanager.repository.CategoryRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,16 @@ public class CategoryService {
         existingCategory=categoryRepository.save(existingCategory);
         return toDTO(existingCategory);
 
+    }
+    //delete category
+    @Transactional
+    public void deleteCategory(Long categoryId) {
+        ProfileEntity profile = profileService.getCurrentProfile();
+        CategoryEntity category = categoryRepository
+                .findByIdAndProfileEntity_Id(categoryId, profile.getId())
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+
+        categoryRepository.delete(category);
     }
 
     // helper methods

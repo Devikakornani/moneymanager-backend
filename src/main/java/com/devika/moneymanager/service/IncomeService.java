@@ -117,6 +117,7 @@ public class IncomeService {
         );
     }
 
+
     //helper methods
     private IncomeEntity toEntity(IncomeDTO incomeDTO, ProfileEntity profileEntity, CategoryEntity categoryEntity){
         return IncomeEntity.builder()

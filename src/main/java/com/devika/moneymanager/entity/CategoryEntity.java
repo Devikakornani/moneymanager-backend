@@ -9,6 +9,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "tbl_categories")
@@ -37,4 +39,20 @@ public class CategoryEntity {
     // categories shouldn't be used without category
     @JoinColumn(name="profile_id", nullable = false)
     private ProfileEntity profileEntity;
+
+    @OneToMany(
+            mappedBy = "categoryEntity",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<ExpenseEntity> expenses=new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "categoryEntity",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<IncomeEntity> incomes=new ArrayList<>();
+
+
 }
